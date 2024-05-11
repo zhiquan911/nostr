@@ -44,7 +44,7 @@ class NostrRequest extends Equatable {
 
     final encodedReq = jsonEncode([
       NostrConstants.request,
-      this.subscriptionId,
+      subscriptionId,
       ...filters.map((e) => e.toMap()),
     ]);
 
