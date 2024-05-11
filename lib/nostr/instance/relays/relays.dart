@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:dart_nostr/dart_nostr.dart';
 import 'package:dart_nostr/nostr/instance/relays/base/relays.dart';
@@ -98,15 +99,15 @@ class NostrRelays implements NostrRelaysBase {
   Future<void> init({
     required List<String> relaysUrl,
     void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     void Function(
-            String relayUrl, Object? error, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionError,
+        String relayUrl, Object? error, WebSocketChannel? relayWebSocket)?
+    onRelayConnectionError,
     void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     bool lazyListeningToRelays = false,
     bool retryOnError = false,
     bool retryOnClose = false,
@@ -116,8 +117,8 @@ class NostrRelays implements NostrRelaysBase {
     Duration connectionTimeout = const Duration(seconds: 5),
   }) async {
     assert(
-      relaysUrl.isNotEmpty,
-      "initiating relays with an empty list doesn't make sense, please provide at least one relay url.",
+    relaysUrl.isNotEmpty,
+    "initiating relays with an empty list doesn't make sense, please provide at least one relay url.",
     );
     relaysList = List.of(relaysUrl);
 
@@ -147,17 +148,17 @@ class NostrRelays implements NostrRelaysBase {
   /// ```
   @override
   void sendEventToRelays(
-    NostrEvent event, {
-    void Function(String relay, NostrEventOkCommand ok)? onOk,
-  }) {
+      NostrEvent event, {
+        void Function(String relay, NostrEventOkCommand ok)? onOk,
+      }) {
     final serialized = event.serialized();
 
- if(event.id == null) {
+    if(event.id == null) {
       throw Exception('event id cannot be null');
     }
 
     _runFunctionOverRelationIteration((relay) {
-      
+
       _registerOnOklCallBack(
         associatedEventId: event.id!,
         onOk: onOk ?? (relay, ok) {},
@@ -175,9 +176,9 @@ class NostrRelays implements NostrRelaysBase {
   /// {@endtemplate}
   @override
   Future<NostrEventOkCommand> sendEventToRelaysAsync(
-    NostrEvent event, {
-    required Duration timeout,
-  }) {
+      NostrEvent event, {
+        required Duration timeout,
+      }) {
     var isSomeOkTriggered = false;
 
     final completers = <Completer<NostrEventOkCommand>>[];
@@ -197,9 +198,9 @@ class NostrRelays implements NostrRelaysBase {
       final serialized = event.serialized();
 
 
- if(event.id == null) {
-      throw Exception('event id cannot be null');
-    }
+      if(event.id == null) {
+        throw Exception('event id cannot be null');
+      }
 
 
       _registerOnOklCallBack(
@@ -222,10 +223,10 @@ class NostrRelays implements NostrRelaysBase {
 
   @override
   void sendCountEventToRelays(
-    NostrCountEvent countEvent, {
-    required void Function(String relay, NostrCountResponse countResponse)
+      NostrCountEvent countEvent, {
+        required void Function(String relay, NostrCountResponse countResponse)
         onCountResponse,
-  }) {
+      }) {
     final serialized = countEvent.serialized();
 
     _runFunctionOverRelationIteration((relay) {
@@ -244,9 +245,9 @@ class NostrRelays implements NostrRelaysBase {
 
   @override
   Future<NostrCountResponse> sendCountEventToRelaysAsync(
-    NostrCountEvent countEvent, {
-    required Duration timeout,
-  }) {
+      NostrCountEvent countEvent, {
+        required Duration timeout,
+      }) {
     var isSomeOkTriggered = false;
 
     final completers = <Completer<NostrCountResponse>>[];
@@ -317,7 +318,7 @@ class NostrRelays implements NostrRelaysBase {
 
     final requestSubId = request.subscriptionId;
     final subStream = streamsController.events.where(
-      (event) => _filterNostrEventsWithId(event, requestSubId),
+          (event) => _filterNostrEventsWithId(event, requestSubId),
     );
 
     return NostrEventsStream(
@@ -342,7 +343,7 @@ class NostrRelays implements NostrRelaysBase {
       request: request,
       onEose: onEose,
       useConsistentSubscriptionIdBasedOnRequestData:
-          useConsistentSubscriptionIdBasedOnRequestData,
+      useConsistentSubscriptionIdBasedOnRequestData,
     );
 
     final subId = subscription.subscriptionId;
@@ -368,13 +369,23 @@ class NostrRelays implements NostrRelaysBase {
           }
         },
       );
+
+      //FIX BUG: Events should be handle in here
+      _registerOnEventsCallBack(
+        subscriptionId: subId,
+        relay: relay.url,
+        onEvents: (relay, event) {
+          events.add(event);
+        },
+      );
     });
 
-    subscription.stream.listen(events.add);
+
+    // subscription.stream.listen(events.add);
 
     Future.delayed(
       timeout,
-      () {
+          () {
         if (!isSomeEoseTriggered) {
           if (shouldThrowErrorOnTimeoutWithoutEose) {
             throw TimeoutException(
@@ -423,7 +434,7 @@ class NostrRelays implements NostrRelaysBase {
       return;
     }
     _runFunctionOverRelationIteration(
-      (relay) {
+          (relay) {
         relay.socket.sink.add(serialized);
         utils.log(
           'Close request with subscription id: $subscriptionId is sent to relay with url: ${relay.url}',
@@ -457,17 +468,17 @@ class NostrRelays implements NostrRelaysBase {
   void startListeningToRelay({
     required String relay,
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool retryOnError,
     required bool retryOnClose,
     required bool shouldReconnectToRelayOnNotice,
@@ -475,19 +486,24 @@ class NostrRelays implements NostrRelaysBase {
     required bool ignoreConnectionException,
     required bool lazyListeningToRelays,
     void Function(
-            String relay, WebSocketChannel? relayWebSocket, NostrNotice notice)?
-        onNoticeMessageFromRelay,
+        String relay, WebSocketChannel? relayWebSocket, NostrNotice notice)?
+    onNoticeMessageFromRelay,
   }) {
     final relayWebSocket = nostrRegistry.getRelayWebSocket(relayUrl: relay);
 
     relayWebSocket!.stream.listen(
-      (d) {
+          (d) {
         final data = d.toString();
 
         onRelayListening?.call(relay, d, relayWebSocket);
 
         if (NostrEvent.canBeDeserialized(data)) {
           _handleAddingEventToSink(
+            event: NostrEvent.deserialized(data),
+            relay: relay,
+          );
+
+          _handleEventsMessageFromRelay(
             event: NostrEvent.deserialized(data),
             relay: relay,
           );
@@ -595,7 +611,7 @@ class NostrRelays implements NostrRelaysBase {
   }) async {
     try {
       final relayHttpUri =
-          webSocketsService.getHttpUrlFromWebSocketUrl(relayUrl);
+      webSocketsService.getHttpUrlFromWebSocketUrl(relayUrl);
 
       final res = await http.get(
         relayHttpUri,
@@ -622,17 +638,17 @@ class NostrRelays implements NostrRelaysBase {
   @override
   Future<void> reconnectToRelays({
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool retryOnError,
     required bool retryOnClose,
     required bool shouldReconnectToRelayOnNotice,
@@ -674,10 +690,10 @@ class NostrRelays implements NostrRelaysBase {
     int Function(String relayUrl)? closeCode,
     String Function(String relayUrl)? closeReason,
     void Function(
-      String relayUrl,
-      WebSocketChannel relayWebSOcket,
-      dynamic webSocketDisconnectionMessage,
-    )? onRelayDisconnect,
+        String relayUrl,
+        WebSocketChannel relayWebSOcket,
+        dynamic webSocketDisconnectionMessage,
+        )? onRelayDisconnect,
   }) async {
     final webSockets = nostrRegistry.relaysWebSocketsRegistry;
     for (var index = 0; index < webSockets.length; index++) {
@@ -720,17 +736,17 @@ class NostrRelays implements NostrRelaysBase {
   Future<void> _reconnectToRelay({
     required String relay,
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool retryOnError,
     required bool retryOnClose,
     required bool shouldReconnectToRelayOnNotice,
@@ -760,17 +776,17 @@ class NostrRelays implements NostrRelaysBase {
   Future<void> _startConnectingAndRegisteringRelay({
     required String relayUrl,
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool lazyListeningToRelays,
     required bool retryOnError,
     required bool retryOnClose,
@@ -795,17 +811,17 @@ class NostrRelays implements NostrRelaysBase {
   Future<void> _startConnectingAndRegisteringRelays({
     required List<String> relaysUrl,
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool lazyListeningToRelays,
     required bool retryOnError,
     required bool retryOnClose,
@@ -858,9 +874,9 @@ class NostrRelays implements NostrRelaysBase {
   }
 
   bool _filterNostrEventsWithId(
-    NostrEvent event,
-    String? requestSubId,
-  ) {
+      NostrEvent event,
+      String? requestSubId,
+      ) {
     final eventSubId = event.subscriptionId;
 
     return eventSubId == requestSubId;
@@ -892,17 +908,17 @@ class NostrRelays implements NostrRelaysBase {
     required NostrNotice notice,
     required String relay,
     required void Function(
-      String relayUrl,
-      dynamic receivedData,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayListening,
+        String relayUrl,
+        dynamic receivedData,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayListening,
     required void Function(
-      String relayUrl,
-      Object? error,
-      WebSocketChannel? relayWebSocket,
-    )? onRelayConnectionError,
+        String relayUrl,
+        Object? error,
+        WebSocketChannel? relayWebSocket,
+        )? onRelayConnectionError,
     required void Function(String relayUrl, WebSocketChannel? relayWebSocket)?
-        onRelayConnectionDone,
+    onRelayConnectionDone,
     required bool retryOnError,
     required bool retryOnClose,
     required bool shouldReconnectToRelayOnNotice,
@@ -988,7 +1004,7 @@ class NostrRelays implements NostrRelaysBase {
   void _registerOnCountCallBack({
     required String subscriptionId,
     required void Function(String relay, NostrCountResponse countResponse)
-        onCountResponse,
+    onCountResponse,
     required String relay,
   }) {
     nostrRegistry.registerCountResponseCallBack(
@@ -1013,9 +1029,39 @@ class NostrRelays implements NostrRelaysBase {
     );
   }
 
+  void _registerOnEventsCallBack({
+    required String subscriptionId,
+    required void Function(String relay, NostrEvent events) onEvents,
+    required String relay,
+  }) {
+    nostrRegistry.registerEventsCallBack(
+      subscriptionId: subscriptionId,
+      onEvents: onEvents,
+      relay: relay,
+    );
+  }
+
+  void _handleEventsMessageFromRelay({
+    required NostrEvent event,
+    required String relay,
+  }) {
+    if(event.subscriptionId == null) {
+      return;
+    }
+    final eventsCallBack = nostrRegistry.getEventsCallBack(
+      subscriptionId: event.subscriptionId!,
+      relay: relay,
+    );
+
+    eventsCallBack?.call(
+      relay,
+      event,
+    );
+  }
+
   void _runFunctionOverRelationIteration(
-    void Function(NostrRelay) relayCallback,
-  ) {
+      void Function(NostrRelay) relayCallback,
+      ) {
     final entries = nostrRegistry.allRelaysEntries();
 
     for (var index = 0; index < entries.length; index++) {

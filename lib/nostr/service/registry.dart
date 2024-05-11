@@ -8,7 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef SubscriptionCallback<T>
-    = Map<String, void Function(String relay, T callback)>;
+= Map<String, void Function(String relay, T callback)>;
 
 typedef RelayCallbackRegister<T> = Map<String, SubscriptionCallback<T>>;
 
@@ -35,6 +35,9 @@ class NostrRegistry {
 
   /// This is the registry which will have all count responses callbacks.
   final countResponseCallBacks = RelayCallbackRegister<NostrCountResponse>();
+
+  /// This is the registry which will have all event responses callbacks.
+  final eventsCallBacks = RelayCallbackRegister<NostrEvent>();
 
   /// Registers a [WebSocket] to the registry with the given [relayUrl].
   /// If a [WebSocket] is already registered with the given [relayUrl], it will be replaced.
@@ -77,6 +80,7 @@ class NostrRegistry {
     okCommandCallBacks.clear();
     eoseCommandCallBacks.clear();
     countResponseCallBacks.clear();
+    eventsCallBacks.clear();
   }
 
   /// Wether a [WebSocket] is registered with the given [relayUrl].
@@ -121,9 +125,9 @@ class NostrRegistry {
 
   /// Returns an ok command callback from the registry with the given [associatedEventId].
   void Function(
-    String relay,
-    NostrEventOkCommand ok,
-  )? getOkCommandCallBack({
+      String relay,
+      NostrEventOkCommand ok,
+      )? getOkCommandCallBack({
     required String associatedEventIdWithOkCommand,
     required String relay,
   }) {
@@ -145,9 +149,9 @@ class NostrRegistry {
 
   /// Returns an eose command callback from the registry with the given [subscriptionId].
   void Function(
-    String relay,
-    NostrRequestEoseCommand eose,
-  )? getEoseCommandCallBack({
+      String relay,
+      NostrRequestEoseCommand eose,
+      )? getEoseCommandCallBack({
     required String subscriptionId,
     required String relay,
   }) {
@@ -160,7 +164,7 @@ class NostrRegistry {
   void registerCountResponseCallBack({
     required String subscriptionId,
     required void Function(String relay, NostrCountResponse countResponse)
-        onCountResponse,
+    onCountResponse,
     required String relay,
   }) {
     final relayCountRegister = countResponseCallBacks[subscriptionId];
@@ -170,16 +174,40 @@ class NostrRegistry {
 
   /// Returns a count response callback from the registry with the given [subscriptionId].
   void Function(
-    String relay,
-    NostrCountResponse countResponse,
-  )? getCountResponseCallBack({
+      String relay,
+      NostrCountResponse countResponse,
+      )? getCountResponseCallBack({
     required String subscriptionId,
     required String relay,
   }) {
     final relayCountRegister =
-        getOrCreateRegister(countResponseCallBacks, relay);
+    getOrCreateRegister(countResponseCallBacks, relay);
 
     return relayCountRegister[subscriptionId];
+  }
+
+  /// Registers an events callback to the registry with the given [subscriptionId].
+  void registerEventsCallBack({
+    required String subscriptionId,
+    required void Function(String relay, NostrEvent events) onEvents,
+    required String relay,
+  }) {
+    final relayEventsRegister = getOrCreateRegister(eventsCallBacks, relay);
+
+    relayEventsRegister[subscriptionId] = onEvents;
+  }
+
+  /// Returns an event callback from the registry with the given [subscriptionId].
+  void Function(
+      String relay,
+      NostrEvent event,
+      )? getEventsCallBack({
+    required String subscriptionId,
+    required String relay,
+  }) {
+    final relayEventsRegister = getOrCreateRegister(eventsCallBacks, relay);
+
+    return relayEventsRegister[subscriptionId];
   }
 
   /// Clears the events registry.
@@ -188,9 +216,9 @@ class NostrRegistry {
   }
 
   SubscriptionCallback<T> getOrCreateRegister<T>(
-    RelayCallbackRegister<T> register,
-    String relay,
-  ) {
+      RelayCallbackRegister<T> register,
+      String relay,
+      ) {
     final relayRegister = register[relay];
 
     if (relayRegister == null) {
