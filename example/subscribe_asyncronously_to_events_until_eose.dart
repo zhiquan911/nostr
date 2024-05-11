@@ -22,6 +22,7 @@ void main(List<String> args) async {
     keyPairs: keyPair,
   );
 
+  
   try {
     final countEvent = NostrCountEvent.fromPartialData(
       eventsFilter: NostrFilter(
