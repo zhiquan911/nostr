@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:dart_nostr/dart_nostr.dart';
 import 'package:dart_nostr/nostr/instance/relays/base/relays.dart';
@@ -369,19 +368,9 @@ class NostrRelays implements NostrRelaysBase {
           }
         },
       );
-
-      //FIX BUG: Events should be handle in here
-      _registerOnEventsCallBack(
-        subscriptionId: subId,
-        relay: relay.url,
-        onEvents: (relay, event) {
-          events.add(event);
-        },
-      );
     });
 
-
-    // subscription.stream.listen(events.add);
+    subscription.stream.listen(events.add);
 
     Future.delayed(
       timeout,
@@ -499,11 +488,6 @@ class NostrRelays implements NostrRelaysBase {
 
         if (NostrEvent.canBeDeserialized(data)) {
           _handleAddingEventToSink(
-            event: NostrEvent.deserialized(data),
-            relay: relay,
-          );
-
-          _handleEventsMessageFromRelay(
             event: NostrEvent.deserialized(data),
             relay: relay,
           );
@@ -1026,36 +1010,6 @@ class NostrRelays implements NostrRelaysBase {
     countCallBack?.call(
       relay,
       countResponse,
-    );
-  }
-
-  void _registerOnEventsCallBack({
-    required String subscriptionId,
-    required void Function(String relay, NostrEvent events) onEvents,
-    required String relay,
-  }) {
-    nostrRegistry.registerEventsCallBack(
-      subscriptionId: subscriptionId,
-      onEvents: onEvents,
-      relay: relay,
-    );
-  }
-
-  void _handleEventsMessageFromRelay({
-    required NostrEvent event,
-    required String relay,
-  }) {
-    if(event.subscriptionId == null) {
-      return;
-    }
-    final eventsCallBack = nostrRegistry.getEventsCallBack(
-      subscriptionId: event.subscriptionId!,
-      relay: relay,
-    );
-
-    eventsCallBack?.call(
-      relay,
-      event,
     );
   }
 

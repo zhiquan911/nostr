@@ -36,9 +36,6 @@ class NostrRegistry {
   /// This is the registry which will have all count responses callbacks.
   final countResponseCallBacks = RelayCallbackRegister<NostrCountResponse>();
 
-  /// This is the registry which will have all event responses callbacks.
-  final eventsCallBacks = RelayCallbackRegister<NostrEvent>();
-
   /// Registers a [WebSocket] to the registry with the given [relayUrl].
   /// If a [WebSocket] is already registered with the given [relayUrl], it will be replaced.
   WebSocketChannel registerRelayWebSocket({
@@ -80,7 +77,6 @@ class NostrRegistry {
     okCommandCallBacks.clear();
     eoseCommandCallBacks.clear();
     countResponseCallBacks.clear();
-    eventsCallBacks.clear();
   }
 
   /// Wether a [WebSocket] is registered with the given [relayUrl].
@@ -184,30 +180,6 @@ class NostrRegistry {
         getOrCreateRegister(countResponseCallBacks, relay);
 
     return relayCountRegister[subscriptionId];
-  }
-
-  /// Registers an events callback to the registry with the given [subscriptionId].
-  void registerEventsCallBack({
-    required String subscriptionId,
-    required void Function(String relay, NostrEvent events) onEvents,
-    required String relay,
-  }) {
-    final relayEventsRegister = getOrCreateRegister(eventsCallBacks, relay);
-
-    relayEventsRegister[subscriptionId] = onEvents;
-  }
-
-  /// Returns an event callback from the registry with the given [subscriptionId].
-  void Function(
-      String relay,
-      NostrEvent event,
-      )? getEventsCallBack({
-    required String subscriptionId,
-    required String relay,
-  }) {
-    final relayEventsRegister = getOrCreateRegister(eventsCallBacks, relay);
-
-    return relayEventsRegister[subscriptionId];
   }
 
   /// Clears the events registry.
