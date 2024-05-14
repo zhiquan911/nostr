@@ -835,6 +835,7 @@ class NostrRelays implements NostrRelaysBase {
       try {
         await webSocketsService.connectRelay(
           relay: relay,
+          shouldIgnoreConnectionException: ignoreConnectionException,
           onConnectionSuccess: (relayWebSocket) {
             nostrRegistry.registerRelayWebSocket(
               relayUrl: relay,
